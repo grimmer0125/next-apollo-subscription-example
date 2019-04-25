@@ -30,11 +30,22 @@ const Router = require("koa-router");
 // })
 
 const { PubSub } = require("apollo-server");
+
+const POST_ADDED = "POST_ADDED";
 const pubsub = new PubSub();
 // export default pubsub;
 
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
+  type Subscription {
+    postAdded: Post
+  }
+
+  type Post {
+    author: String
+    comment: String
+  }
+
   type Query {
     hello(name: String): String
   }
@@ -42,8 +53,30 @@ const typeDefs = gql`
 
 // Provide resolver functions for your schema fields
 const resolvers = {
+  Subscription: {
+    postAdded: {
+      // Additional event labels can be passed to asyncIterator creation
+      subscribe: () => pubsub.asyncIterator([POST_ADDED])
+    }
+  },
   Query: {
     hello: () => {
+      console.log("get hello query");
+
+      // example:
+      // 1. https://github.com/the-road-to-graphql/fullstack-apollo-subscription-example/blob/master/server/src/index.js
+      // 2. https://github.com/dmitryAgli/todoApp_apollo
+
+      // https://www.apollographql.com/docs/react/advanced/subscriptions
+      // https://github.com/apollographql/apollo-server/blob/5735e79ca8c59d3292a3ef7dd9bb65ebe1098acd/packages/apollo-server-integration-testsuite/src/ApolloServer.ts#L994
+
+      // TODO: not work !!!
+      setTimeout(() => {
+        console.log("publish post_add");
+        pubsub.publish(POST_ADDED, {
+          postAdded: { author: "grimmer", comment: "11" }
+        });
+      }, 10000);
       return "Hello world!";
     }
   }
@@ -77,7 +110,8 @@ server.applyMiddleware({ app });
 //${app.port}
 
 console.log("app.port:", app.port);
-const httpServer = app.listen(4000, () =>
-  console.log(`app is listening on port 4000`)
+const port = 8000;
+const httpServer = app.listen(port, () =>
+  console.log(`app is listening on port ${port}`)
 );
 server.installSubscriptionHandlers(httpServer);

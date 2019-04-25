@@ -23,7 +23,7 @@
             "name": "Debug Node.js server current file",
             "runtimeArgs": [
                 "-r",
-                "ts-node/register",
+                "${workspaceFolder}/server/node_modules//ts-node/register",
             ],
             "args": [
                 "${file}"
