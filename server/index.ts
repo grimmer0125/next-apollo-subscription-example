@@ -2,7 +2,13 @@ const Koa = require("koa");
 const { ApolloServer, gql } = require("apollo-server-koa");
 
 // TODO: integrate it with nextjs?
-// https://lorefnon.tech/2018/08/18/integrating-next-js-apollo-server-and-koa/
+// https://lorefnon.tech/2018/08/18/integrating-next-js-apollo-server-and-koa/ (no subscription)
+// ttps://github.com/adamsoffer/next-apollo/issues/5 (only client)
+// https://github.com/lfades/with-apollo-subscriptions/blob/master/server.js (old)
+
+// next + apollo + subscription
+// https://github.com/zeit/next.js/issues/3036
+// https://github.com/zeit/next.js/issues/3261
 
 // https://www.apollographql.com/docs/apollo-server/v1/graphiql
 // import { graphiqlKoa } from "apollo-server-koa";
@@ -30,10 +36,8 @@ const Router = require("koa-router");
 // })
 
 const { PubSub } = require("apollo-server");
-
 const POST_ADDED = "POST_ADDED";
 const pubsub = new PubSub();
-// export default pubsub;
 
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
@@ -65,7 +69,11 @@ const resolvers = {
 
       // example:
       // 1. https://github.com/the-road-to-graphql/fullstack-apollo-subscription-example/blob/master/server/src/index.js
+      //     a. x apollo-server-express
+      //     b. create-react-app
       // 2. https://github.com/dmitryAgli/todoApp_apollo
+      //     a. x apollo-server-express
+      //     b. create-react-app
 
       // https://www.apollographql.com/docs/react/advanced/subscriptions
       // https://github.com/apollographql/apollo-server/blob/5735e79ca8c59d3292a3ef7dd9bb65ebe1098acd/packages/apollo-server-integration-testsuite/src/ApolloServer.ts#L994

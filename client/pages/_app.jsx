@@ -2,6 +2,7 @@ import React from "react";
 import App, { Container } from "next/app";
 import { ApolloProvider } from "react-apollo";
 import fetch from "node-fetch";
+import { InMemoryCache } from "apollo-cache-inmemory";
 
 import ApolloClient from "apollo-boost";
 
@@ -12,13 +13,13 @@ import { getMainDefinition } from "apollo-utilities";
 
 // Create an http link:
 const httpLink = new HttpLink({
-  uri: "http://localhost:8000/graphql",
+  uri: "http://localhost:4000/graphql",
   fetch: fetch
 });
 
 const WebSocket2 = require("isomorphic-ws");
 const wsLink = new WebSocketLink({
-  uri: `ws://localhost:8000/graphql`,
+  uri: `ws://localhost:4000/graphql`,
   options: {
     reconnect: true
   },
@@ -43,8 +44,12 @@ const link = split(
 
 const link2 = ApolloLink.from([link]);
 
+const cache = new InMemoryCache();
+
 const client = new ApolloClient({
   fetch: fetch,
+  link: link2,
+  cache: cache,
 
   // link: link // 沒加上去就會出現紅色的試著連線次數 (跟 node ws server 無關),
   // 加上去則: ApolloBoost was initialized with unsupported options: link
@@ -56,7 +61,7 @@ const client = new ApolloClient({
   // http://localhost:3000/graphql
   // [Network error]: ServerParseError: Unexpected token N in JSON at position 0
   // graphql query error and  + sub data: undefined
-  uri: "http://localhost:8000/graphql"
+  uri: "http://localhost:4000/graphql"
 });
 
 class MyApp extends App {
