@@ -1,0 +1,24 @@
+{
+  "name": "koa-apollo-subscription-example",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "apollo-server": "^2.4.8",
+    "apollo-server-koa": "^2.4.8",
+    "express": "^4.16.4",
+    "graphql": "^14.2.1",
+    "koa": "^2.7.0",
+    "koa-graphiql": "^1.1.0",
+    "koa-router": "^7.4.0",
+    "ws": "^6.2.1"
+  },
+  "devDependencies": {
+    "ts-node": "8.0.2",
+    "typescript": "3.2.4"
+  }
+}
