@@ -14,8 +14,10 @@
   "license": "ISC",
   "dependencies": {
     "apollo-boost": "^0.3.1",
+    "apollo-link-state": "^0.4.2",
     "apollo-link-ws": "^1.0.17",
     "graphql": "^14.2.1",
+    "isomorphic-unfetch": "^3.0.0",
     "isomorphic-ws": "^4.0.1",
     "next": "^8.1.0",
     "node-fetch": "^2.3.0",
