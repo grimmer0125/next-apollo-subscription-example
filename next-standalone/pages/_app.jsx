@@ -5,42 +5,78 @@ import fetch from "node-fetch";
 import { InMemoryCache } from "apollo-cache-inmemory";
 
 import ApolloClient from "apollo-boost";
+import { SubscriptionClient } from "subscriptions-transport-ws";
 
 import { ApolloLink, split } from "apollo-link";
 import { HttpLink } from "apollo-link-http";
 import { WebSocketLink } from "apollo-link-ws";
 import { getMainDefinition } from "apollo-utilities";
 
+const GRAPHQL_ENDPOINT = "http://localhost:4000/graphql";
+const GRAPHQL_WS_ENDPOINT = "ws://localhost:4000/subscriptions";
+
 // Create an http link:
+// const httpLink = new HttpLink({
+//   uri: "http://localhost:4000/graphql",
+//   fetch: fetch
+// });
+
+const wsLink = process.browser
+  ? new WebSocketLink(
+      new SubscriptionClient(GRAPHQL_WS_ENDPOINT, {
+        reconnect: true
+      })
+    )
+  : null;
+
 const httpLink = new HttpLink({
-  uri: "http://localhost:4000/graphql",
+  uri: GRAPHQL_ENDPOINT,
   fetch: fetch
 });
 
-const WebSocket2 = require("isomorphic-ws");
-const wsLink = new WebSocketLink({
-  uri: `ws://localhost:4000/graphql`,
-  options: {
-    reconnect: true
-  },
-  webSocketImpl: WebSocket2
-});
+// Polyfill fetch() on the server (used by apollo-client)
+// if (!process.browser) {
+//   global.fetch = fetch;
+// }
+
+// const WebSocket2 = require("isomorphic-ws");
+// const wsLink = new WebSocketLink({
+//   uri: `ws://localhost:4000/graphql`,
+//   options: {
+//     reconnect: true
+//   },
+//   webSocketImpl: WebSocket2
+// });
 
 // ref: https://github.com/the-road-to-graphql/fullstack-apollo-subscription-example/blob/master/client/src/index.js
 // using the ability to split links, you can send data to each link
 // depending on what kind of operation is being sent
-const link = split(
-  // split based on operation type
-  ({ query }) => {
-    const definition = getMainDefinition(query);
-    return (
-      definition.kind === "OperationDefinition" &&
-      definition.operation === "subscription"
-    );
-  },
-  wsLink,
-  httpLink
-);
+// const link = split(
+//   // split based on operation type
+//   ({ query }) => {
+//     const definition = getMainDefinition(query);
+//     return (
+//       definition.kind === "OperationDefinition" &&
+//       definition.operation === "subscription"
+//     );
+//   },
+//   wsLink,
+//   httpLink
+// );
+
+const link = wsLink
+  ? split(
+      ({ query }) => {
+        let definition = getMainDefinition(query);
+        return (
+          definition.kind === "OperationDefinition" &&
+          definition.operation === "subscription"
+        );
+      },
+      wsLink,
+      httpLink
+    )
+  : httpLink;
 
 const link2 = ApolloLink.from([link]);
 

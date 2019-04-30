@@ -1,43 +1,21 @@
-const Koa = require("koa");
-const { ApolloServer, gql } = require("apollo-server-koa");
-
-// TODO: integrate it with nextjs?
-// https://lorefnon.tech/2018/08/18/integrating-next-js-apollo-server-and-koa/ (no subscription)
-// ttps://github.com/adamsoffer/next-apollo/issues/5 (only client)
-// https://github.com/lfades/with-apollo-subscriptions/blob/master/server.js (old)
-
-// next + apollo + subscription
-// https://github.com/zeit/next.js/issues/3036
-// https://github.com/zeit/next.js/issues/3261
-
-// https://www.apollographql.com/docs/apollo-server/v1/graphiql
-// import { graphiqlKoa } from "apollo-server-koa";
-// import { graphqlKoa } from "apollo-server-koa/dist/koaApollo";
-// import { GraphQLError } from "graphql";
-import graphiql from "koa-graphiql";
-
-const Router = require("koa-router");
-
-// koa built-in way
-// app.use(async (ctx,next)=>{
-//   if (ctx.path === '/404') {
-//     ctx.body = 'page not found';
-//   } else {
-//     await next;
-//   }
-// })
-
-// koa-router
-// .get('/', (ctx, next) => {
-//   ctx.body = 'Hello World!';
-// })
-// .post('/users', (ctx, next) => {
-//   // ...
-// })
+// const api = require("./lib/api");
+// const body = require("body-parser");
+// const co = require("co");
+const express = require("express");
+const next = require("next");
+const cors = require("cors");
+const { ApolloServer } = require("apollo-server-express");
+const dev = process.env.NODE_ENV !== "production";
+const nextApp = next({ dev });
+const handle = nextApp.getRequestHandler();
+const PORT = 3000;
+const http = require("http");
 
 const { PubSub } = require("apollo-server");
 const POST_ADDED = "POST_ADDED";
 const pubsub = new PubSub();
+
+const { gql } = require("apollo-server-express");
 
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
@@ -51,7 +29,7 @@ const typeDefs = gql`
   }
 
   type Query {
-    hello(name: String): String
+    hello: String
   }
 `;
 
@@ -66,19 +44,6 @@ const resolvers = {
   Query: {
     hello: () => {
       console.log("get hello query");
-
-      // example:
-      // 1. https://github.com/the-road-to-graphql/fullstack-apollo-subscription-example/blob/master/server/src/index.js
-      //     a. x apollo-server-express
-      //     b. create-react-app
-      // 2. https://github.com/dmitryAgli/todoApp_apollo
-      //     a. x apollo-server-express
-      //     b. create-react-app
-
-      // https://www.apollographql.com/docs/react/advanced/subscriptions
-      // https://github.com/apollographql/apollo-server/blob/5735e79ca8c59d3292a3ef7dd9bb65ebe1098acd/packages/apollo-server-integration-testsuite/src/ApolloServer.ts#L994
-
-      // TODO: not work !!!
       setTimeout(() => {
         console.log("publish post_add");
         pubsub.publish(POST_ADDED, {
@@ -90,36 +55,118 @@ const resolvers = {
   }
 };
 
-// sub:
-// https://github.com/apollographql/apollo-server/blob/5735e79ca8c59d3292a3ef7dd9bb65ebe1098acd/packages/apollo-server-integration-testsuite/src/ApolloServer.ts
-// https://github.com/apollographql/apollo-server/blob/5735e79ca8c59d3292a3ef7dd9bb65ebe1098acd/packages/apollo-server-integration-testsuite/src/ApolloServer.ts#L994
-// https://github.com/apollographql/apollo-server/issues/1462
-const app = new Koa();
-const router = new Router();
-router.get("/hello", (ctx, next) => {
-  ctx.body = "Hello World!";
+// ref: https://github.com/dizzyn/code-beer/blob/master/src/server.js
+nextApp.prepare().then(() => {
+  // const config = require("./config/config");
+  // const { typeDefs, resolvers } = require("./lib/schema");
+
+  const apolloServer = new ApolloServer({
+    typeDefs,
+    resolvers,
+    uploads: false,
+    subscriptions: {
+      path: "/subscriptions",
+      onConnect: async (connectionParams, webSocket) => {
+        console.log(
+          `Subscription client connected using Apollo server's built-in SubscriptionServer.`
+        );
+      }
+    }
+  });
+
+  const app = express();
+  const httpServer = http.createServer(app);
+  apolloServer.applyMiddleware({ app: app });
+  apolloServer.installSubscriptionHandlers(httpServer);
+
+  // app.use(body.json());
+  app.use((req, res, next) => {
+    // Also expose the MongoDB database handle so Next.js can access it.
+    next();
+  });
+  // app.use("/api", api());
+  app.use(cors());
+
+  const port2 = 4000;
+  httpServer.listen(port2, () => {
+    console.log(
+      `Graphql server ready at http://localhost:${port2}${
+        apolloServer.graphqlPath
+      }`
+    );
+    console.log(
+      `Graphql subscription server ready at ws://localhost:${port2}${
+        apolloServer.subscriptionsPath
+      }`
+    );
+  });
+
+  // Everything that isn't '/api' gets passed along to Next.js
+  app.get("*", (req, res) => {
+    return handle(req, res);
+  });
+
+  // need this ? next port?
+  app.listen(PORT, () => {
+    console.log(`Server ready at http://localhost:${PORT}`);
+  });
 });
-// router.get("/graphiql", graphiqlKoa({ endpointURL: "/graphql" }));
-router.get(
-  "/graphiql",
-  graphiql(async ctx => ({
-    url: "/graphql"
-  }))
-);
 
-app.use(router.routes()).use(router.allowedMethods());
+// const express = require("express");
+// import { createServer } from "http";
+// const { ApolloServer, gql } = require("apollo-server-express");
 
-const server = new ApolloServer({ typeDefs, resolvers });
-server.applyMiddleware({ app });
+// const app = express();
 
-// app.listen({ port: 4000 }, () =>
-//   console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`),
-// );
-//${app.port}
+// const apolloServer = new ApolloServer({
+//   typeDefs,
+//   resolvers,
+//   subscriptions: {
+//     path: "/subscriptions",
+//     onConnect: async (connectionParams, webSocket) => {
+//       console.log(
+//         `Subscription client connected using Apollo server's built-in SubscriptionServer.`
+//       );
+//     }
+//   }
+// });
+// apolloServer.applyMiddleware({ app });
 
-console.log("app.port:", app.port);
-const port = 8000;
-const httpServer = app.listen(port, () =>
-  console.log(`app is listening on port ${port}`)
-);
-server.installSubscriptionHandlers(httpServer);
+// const httpServer = createServer(app);
+// apolloServer.installSubscriptionHandlers(httpServer);
+
+// const PORT = 4000;
+
+// httpServer.listen({ port: PORT }, () => {
+//   console.log(
+//     `🚀 Server ready at http://localhost:${PORT}${apolloServer.graphqlPath}`
+//   );
+//   console.log(
+//     `🚀 Subscriptions ready at ws://localhost:${PORT}${
+//       apolloServer.subscriptionsPath
+//     }`
+//   );
+// });
+
+// var express = require('express');
+// var app = express();
+
+// app.get('/', async function (req, res) {
+//   console.log("1")
+//   const a = new Promise(function(resolve, reject) {
+//     setTimeout(function() {
+//       resolve('foo');
+//     }, 5000);
+//   });
+
+//   await a;
+
+//   console.log("2")
+
+//   res.send('Hello World!');
+// });
+
+// app.listen(3000, function () {
+
+//   console.log('Example app listening on port 3000!');
+// });

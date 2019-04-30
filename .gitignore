@@ -1,2 +1,4 @@
 node_modules
 client/.next
+next-standalone/.next
+server/.next
