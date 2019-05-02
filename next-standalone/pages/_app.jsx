@@ -14,30 +14,52 @@ import { withClientState } from "apollo-link-state";
 import { InMemoryCache } from "apollo-cache-inmemory";
 
 const GRAPHQL_ENDPOINT = "http://localhost:4000/graphql";
+
+// NOTE:
+// if const server = new ApolloServer({subscriptions: { path: "/subscriptions" is set
+// here should be /subscriptions, otherwise it is /graphql
 const GRAPHQL_WS_ENDPOINT = "ws://localhost:4000/subscriptions";
 
-let apolloClient; //: ApolloClient<any>;
+// case1 work
+// const wsLink = process.browser
+//   ? new WebSocketLink(
+//       new SubscriptionClient(GRAPHQL_WS_ENDPOINT, {
+//         reconnect: true
+//       })
+//     )
+//   : null;
 
-const wsLink = process.browser
-  ? new WebSocketLink(
-      new SubscriptionClient(GRAPHQL_WS_ENDPOINT, {
-        reconnect: true
-      })
-    )
-  : null;
+// not work
+// const wsLink = new WebSocketLink(
+//   new SubscriptionClient(GRAPHQL_WS_ENDPOINT, {
+//     reconnect: true
+//   })
+// );
+
+// case2 work
+const WebSocket2 = require("isomorphic-ws");
+const wsLink = new WebSocketLink({
+  uri: GRAPHQL_WS_ENDPOINT,
+  options: {
+    reconnect: true
+  },
+  webSocketImpl: WebSocket2 // browser can not use ws's WebSocket
+});
 
 const httpLink = new HttpLink({
   uri: GRAPHQL_ENDPOINT
 });
 
+// not necessary
 // Polyfill fetch() on the server (used by apollo-client)
-if (!process.browser) {
-  global.fetch = fetch;
-}
+// if (!process.browser) {
+//   global.fetch = fetch;
+// }
 
-function create(initialState) {
-  const cache = new InMemoryCache().restore(initialState || {});
+function create() {
+  const cache = new InMemoryCache(); //new InMemoryCache().restore(initialState || {});
 
+  // works for case1, case2
   const link = wsLink
     ? split(
         ({ query }) => {
@@ -52,6 +74,19 @@ function create(initialState) {
       )
     : httpLink;
 
+  // works for case2
+  // const link = split(
+  //   ({ query }) => {
+  //     let definition = getMainDefinition(query);
+  //     return (
+  //       definition.kind === "OperationDefinition" &&
+  //       definition.operation === "subscription"
+  //     );
+  //   },
+  //   wsLink,
+  //   httpLink
+  // );
+
   // NOTE [grimmer]: comment temporarily
   //   const stateLink = withClientState({
   //     cache,
@@ -61,89 +96,90 @@ function create(initialState) {
   //   });
 
   return new ApolloClient({
-    connectToDevTools: process.browser,
-    ssrMode: !process.browser,
+    // connectToDevTools: process.browser,
+    // ssrMode: !process.browser,
     link: ApolloLink.from([link]), // stateLink,
     cache
     // uri: "http://localhost:4000/graphql"
   });
 }
 
-function initApollo(initialState) {
-  if (!process.browser) {
-    return create(initialState);
-  }
+// not necessary
+// function initApollo(initialState) {
+//   // if (!process.browser) {
+//   //   return create(initialState);
+//   // }
 
-  // Reuse client on the client-side
-  if (!apolloClient) {
-    apolloClient = create(initialState);
-  }
+//   // Reuse client on the client-side
+//   if (!apolloClient) {
+//     apolloClient = create(initialState);
+//   }
 
-  return apolloClient;
-}
+//   return apolloClient;
+// }
 // *** init-apollo ***
-
 // ref: https://github.com/chrizzzle/modulo/blob/master/lib/with-apollo-client.tsx
-const withApolloClient = App => {
-  return class Apollo extends React.Component {
-    apolloClient;
+// const withApolloClient = App => {
+//   return class Apollo extends React.Component {
+//     apolloClient;
 
-    static displayName = "withApollo(App)";
+//     static displayName = "withApollo(App)";
 
-    // NOTE [grimmer]: comment temporarily
-    // static async getInitialProps(ctx) {
-    //   const { Component, router } = ctx;
+//     // NOTE [grimmer]: comment temporarily
+//     // static async getInitialProps(ctx) {
+//     //   const { Component, router } = ctx;
 
-    //   let appProps = {};
-    //   if (App.getInitialProps) {
-    //     appProps = await App.getInitialProps(ctx);
-    //   }
+//     //   let appProps = {};
+//     //   if (App.getInitialProps) {
+//     //     appProps = await App.getInitialProps(ctx);
+//     //   }
 
-    //   // Run all GraphQL queries in the component tree
-    //   // and extract the resulting data
-    //   const apollo = initApollo();
-    //   if (!process.browser) {
-    //     try {
-    //       // Run all GraphQL queries
-    //       await getDataFromTree(
-    //         <App
-    //           {...appProps}
-    //           Component={Component}
-    //           router={router}
-    //           apolloClient={apollo}
-    //         />
-    //       );
-    //     } catch (error) {
-    //       // Prevent Apollo Client GraphQL errors from crashing SSR.
-    //       // Handle them in components via the data.error prop:
-    //       // https://www.apollographql.com/docs/react/api/react-apollo.html#graphql-query-data-error
-    //       console.error("Error while running `getDataFromTree`", error);
-    //     }
+//     //   // Run all GraphQL queries in the component tree
+//     //   // and extract the resulting data
+//     //   const apollo = initApollo();
+//     //   if (!process.browser) {
+//     //     try {
+//     //       // Run all GraphQL queries
+//     //       await getDataFromTree(
+//     //         <App
+//     //           {...appProps}
+//     //           Component={Component}
+//     //           router={router}
+//     //           apolloClient={apollo}
+//     //         />
+//     //       );
+//     //     } catch (error) {
+//     //       // Prevent Apollo Client GraphQL errors from crashing SSR.
+//     //       // Handle them in components via the data.error prop:
+//     //       // https://www.apollographql.com/docs/react/api/react-apollo.html#graphql-query-data-error
+//     //       console.error("Error while running `getDataFromTree`", error);
+//     //     }
 
-    //     // getDataFromTree does not call componentWillUnmount
-    //     // head side effect therefore need to be cleared manually
-    //     Head.rewind();
-    //   }
+//     //     // getDataFromTree does not call componentWillUnmount
+//     //     // head side effect therefore need to be cleared manually
+//     //     Head.rewind();
+//     //   }
 
-    //   // Extract query data from the Apollo store
-    //   const apolloState = apollo.cache.extract();
+//     //   // Extract query data from the Apollo store
+//     //   const apolloState = apollo.cache.extract();
 
-    //   return {
-    //     ...appProps,
-    //     apolloState
-    //   };
-    // }
+//     //   return {
+//     //     ...appProps,
+//     //     apolloState
+//     //   };
+//     // }
 
-    constructor(props) {
-      super(props);
-      this.apolloClient = initApollo(props.apolloState);
-    }
+//     constructor(props) {
+//       super(props);
+//       this.apolloClient = create(props.apolloState);
+//       // initApollo(props.apolloState);
+//     }
 
-    render() {
-      return <App {...this.props} apolloClient={this.apolloClient} />;
-    }
-  };
-};
+//     render() {
+//       return <App {...this.props} apolloClient={this.apolloClient} />;
+//     }
+//   };
+// };
 
 // const GRAPHQL_ENDPOINT = "http://localhost:4000/graphql";
 // const GRAPHQL_WS_ENDPOINT = "ws://localhost:4000/subscriptions";
@@ -230,10 +266,18 @@ const withApolloClient = App => {
 //   // http://localhost:3000/graphql
 //   // [Network error]: ServerParseError: Unexpected token N in JSON at position 0
 //   // graphql query error and  + sub data: undefined
+
+// cannot be used, use http link instead, otherwise subscription will not work
 //   uri: "http://localhost:4000/graphql"
 // });
 
+const apolloClient = create();
+
 class MyApp extends App {
+  // apolloClient;
+
+  static displayName = "withApollo(App)";
+
   static async getInitialProps({ Component, ctx }) {
     let pageProps = {};
 
@@ -246,9 +290,18 @@ class MyApp extends App {
     };
   }
 
+  // constructor(props) {
+  //   super(props);
+  //   this.apolloClient = create(props.apolloState);
+  // }
+
+  // render() {
+  //   return <App {...this.props} apolloClient={this.apolloClient} />;
+  // }
+
   render() {
     // const { Component, pageProps } = this.props;
-    const { Component, pageProps, apolloClient } = this.props;
+    const { Component, pageProps } = this.props;
 
     return (
       <ApolloProvider client={apolloClient}>
@@ -261,4 +314,4 @@ class MyApp extends App {
 }
 
 // export default MyApp;
-export default withApolloClient(MyApp);
+export default MyApp;
