@@ -49,7 +49,7 @@ const resolvers = {
         pubsub.publish(POST_ADDED, {
           postAdded: { author: "grimmer", comment: "11" }
         });
-      }, 10000);
+      }, 5000);
       return "Hello world!";
     }
   }

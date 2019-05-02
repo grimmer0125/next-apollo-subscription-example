@@ -18,12 +18,15 @@ const SubscribeUI = () => (
     // variables={{ repoFullName }}
   >
     {({ data, loading }) => {
-      if (loading) return <p>sub Loading...</p>;
-      console.log("sub data:", data);
+      if (loading) return <p>subscription Loading...</p>;
+      console.log("subscriptions data:", data);
+      const { postAdded } = data;
+      const { author, comment } = postAdded;
       return (
-        // return <div>{data.hello}</div>;
         <h4>
-          comment:{" "}
+          author: {author ? author : ""}
+          <p />
+          comment:{comment ? comment : ""}
           {/* {!loading && (onPostAdded ? onPostAdded.content : null)} */}
         </h4>
       );
