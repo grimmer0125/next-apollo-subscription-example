@@ -15,12 +15,15 @@ const typeDefs = gql`
   type Post {
     author: String
     comment: String
+    commentCount: Int
   }
 
   type Query {
     hello: String
   }
 `;
+
+let commentCount = 0;
 
 // Provide resolver functions for your schema fields
 const resolvers = {
@@ -33,12 +36,17 @@ const resolvers = {
   Query: {
     hello: () => {
       console.log("get hello query");
-      setTimeout(() => {
+      setInterval(() => {
         console.log("publish post_add");
+        commentCount += 1;
         pubsub.publish(POST_ADDED, {
-          postAdded: { author: "grimmer", comment: "11" }
+          postAdded: {
+            author: "grimmer",
+            comment: "noComment",
+            commentCount: commentCount
+          }
         });
-      }, 5000);
+      }, 3000);
       return "Hello world!";
     }
   }

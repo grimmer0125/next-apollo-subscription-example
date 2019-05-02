@@ -8,6 +8,7 @@ const POSTS_SUBSCRIPTION = gql`
     postAdded {
       author
       comment
+      commentCount
     }
   }
 `;
@@ -21,12 +22,14 @@ const SubscribeUI = () => (
       if (loading) return <p>subscription Loading...</p>;
       console.log("subscriptions data:", data);
       const { postAdded } = data;
-      const { author, comment } = postAdded;
+      const { author, comment, commentCount } = postAdded;
       return (
         <h4>
           author: {author ? author : ""}
           <p />
           comment:{comment ? comment : ""}
+          <p />
+          count: {commentCount ? commentCount : 0}
           {/* {!loading && (onPostAdded ? onPostAdded.content : null)} */}
         </h4>
       );
