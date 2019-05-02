@@ -29,7 +29,7 @@ const SubscribeUI = () => (
           <p />
           comment:{comment ? comment : ""}
           <p />
-          count: {commentCount ? commentCount : 0}
+          count: {commentCount ? commentCount * 3 : 0}
           {/* {!loading && (onPostAdded ? onPostAdded.content : null)} */}
         </h4>
       );

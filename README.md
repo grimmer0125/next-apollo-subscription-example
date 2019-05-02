@@ -1,5 +1,22 @@
 # next-apollo-subscription-example
 
+## steps
+
+1. use VSCode to launch node.js server (index.ts, pure apollo server)
+2. `yarn dev` in next-standalone
+3. open http://localhost:3000 to see subscription result
+
+OR you can
+
+1. using the VSCode 2nd launch config to launch apollo-express-erver.ts (open that file first)
+2. `yarn dev` in next-standalone
+3. open http://localhost:3000 to see subscription result
+
+OR you can
+
+1. using the VSCode 2nd launch config to launch apollo-next-server.ts (open that file first)
+2. open http://localhost:3000 to see subscription result
+
 ## references
 
 1. https://www.apollographql.com/docs/react/advanced/subscriptions
