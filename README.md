@@ -4,6 +4,24 @@
 
 1. If you use https://github.com/accounts-js, its context may make subscription on ApolloServer fail, ref: https://github.com/accounts-js/accounts/pull/565
 
+The workaround way is 
+```
+    context: async (ctx: any) => {
+      const { req, connection } = ctx;
+      if (!req || !req.headers) {
+        return {};
+      }
+
+      let resp = {};
+      try {
+        resp = accountsGraphQL.context(ctx);
+      } catch (err) {
+        console.log("accountsGraphQL.context err:", err); // can not read undefind of session
+      }
+      return resp;
+    },
+```
+
 ## steps
 
 1. use VSCode to launch node.js server (index.ts, pure apollo server)
