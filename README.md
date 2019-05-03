@@ -1,5 +1,9 @@
 # next-apollo-subscription-example
 
+## issue
+
+1. If you use https://github.com/accounts-js, its context may make subscription on ApolloServer fail, ref: https://github.com/accounts-js/accounts/pull/565
+
 ## steps
 
 1. use VSCode to launch node.js server (index.ts, pure apollo server)
@@ -25,9 +29,11 @@ OR you can
 
 ## Key points (uri, websocket lib issue in next.js ssr environment)
 
-1. WebSocketLink and HttpLink use the same address:port, they even use the same path (/graphql) if ApolloServer does not specify subscriptions' path
-2. ApolloClient do not need to set uri
-3. use isomorphic-ws or process.browser? to create WebSocketLink
+1. You many need to set `import fetch from "isomorphic-unfetch"; and HttpLink({fetch:fetch)` once your setting does not find out fetch
+2. not use `import ApolloClient from "apollo-boost";` use `import { ApolloClient } from 'apollo-client'/'apollo-boost';`
+3. WebSocketLink and HttpLink use the same address:port, they even use the same path (/graphql) if ApolloServer does not specify subscriptions' path
+4. ApolloClient do not need to set uri
+5. use isomorphic-ws or process.browser? to create WebSocketLink
 
 ```
 const WebSocket2 = require("isomorphic-ws");
